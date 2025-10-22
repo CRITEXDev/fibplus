@@ -2066,6 +2066,7 @@ end;
 
 var
  L:integer;
+ PrevNonEmptyLineIndex: Integer;
 
 begin
   FCurDBName:='';
@@ -2231,13 +2232,21 @@ begin
            end
            else
            begin
-            TermState:=ttNorma;
-            if (X>1) or (Y=0) then
-             FScriptMap[CurStmt-1].smdEnd:=StmtCoord(X-1,Y)
-            else
-             FScriptMap[CurStmt-1].smdEnd:=StmtCoord(Length(FScript[Y-1]),Y-1);
+             TermState:=ttNorma;
+             if (X>1) or (Y=0) then
+               FScriptMap[CurStmt-1].smdEnd:=StmtCoord(X-1,Y)
+             else
+             begin
+               // IlSt 20.10.2025 need to eat empty lines, 'cause statement won't execute if smdEnd.X = 0
+               for PrevNonEmptyLineIndex := (Y-1) downto FScriptMap[CurStmt-1].smdBegin.Y do
+                 if Length(FScript[PrevNonEmptyLineIndex]) > 0 then
+                   Break;
+
+               FScriptMap[CurStmt-1].smdEnd:=StmtCoord(Length(FScript[PrevNonEmptyLineIndex]), PrevNonEmptyLineIndex);
+             end;
+
              if FScriptMap[CurStmt-1].smtType<>sInvalid then
-              vCanEndStmt:=ValidateStatement(FScriptMap[CurStmt-1],Terminator=';');
+               vCanEndStmt:=ValidateStatement(FScriptMap[CurStmt-1],Terminator=';');
            end;
            if vCanEndStmt then
            begin
